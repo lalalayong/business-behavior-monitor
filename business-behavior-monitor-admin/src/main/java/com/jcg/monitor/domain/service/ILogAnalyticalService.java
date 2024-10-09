@@ -2,6 +2,7 @@ package com.jcg.monitor.domain.service;
 
 import com.jcg.monitor.domain.model.entity.MonitorDataEntity;
 import com.jcg.monitor.domain.model.entity.MonitorDataMapEntity;
+import com.jcg.monitor.domain.model.entity.MonitorFlowDesignerEntity;
 import com.jcg.monitor.domain.model.valobj.MonitorTreeConfigVO;
 import ognl.OgnlException;
 
@@ -16,4 +17,6 @@ public interface ILogAnalyticalService {
     MonitorTreeConfigVO queryMonitorFlowData(String monitorId);
 
     List<MonitorDataEntity> queryMonitorDataEntityList(MonitorDataEntity monitorDataEntity);
+
+    void updateMonitorFlowDesigner(MonitorFlowDesignerEntity monitorFlowDesignerEntity);
 }

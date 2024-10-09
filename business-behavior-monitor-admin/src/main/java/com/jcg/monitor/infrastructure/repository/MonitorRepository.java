@@ -2,6 +2,7 @@ package com.jcg.monitor.infrastructure.repository;
 
 import com.jcg.monitor.domain.model.entity.MonitorDataEntity;
 import com.jcg.monitor.domain.model.entity.MonitorDataMapEntity;
+import com.jcg.monitor.domain.model.entity.MonitorFlowDesignerEntity;
 import com.jcg.monitor.domain.model.valobj.GatherNodeExpressionVO;
 import com.jcg.monitor.domain.model.valobj.MonitorTreeConfigVO;
 import com.jcg.monitor.domain.repository.IMonitorRepository;
@@ -10,6 +11,7 @@ import com.jcg.monitor.infrastructure.po.*;
 import com.jcg.monitor.infrastructure.redis.IRedisService;
 import com.jcg.monitor.types.Constants;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -33,6 +35,9 @@ public class MonitorRepository implements IMonitorRepository {
 
     @Resource
     private IRedisService redisService;
+
+    @Resource
+    private TransactionTemplate transactionTemplate;
 
     @Override
     public List<GatherNodeExpressionVO> queryGatherNodeExpressionVO(String systemName, String className, String methodName) {
@@ -193,6 +198,36 @@ public class MonitorRepository implements IMonitorRepository {
             monitorDataEntities.add(monitorDataEntityRes);
         }
         return monitorDataEntities;
+    }
+
+    @Override
+    public void updateMonitorFlowDesigner(MonitorFlowDesignerEntity monitorFlowDesignerEntity) {
+        transactionTemplate.execute(status -> {
+            try {
+                List<MonitorFlowDesignerEntity.Node> nodeList = monitorFlowDesignerEntity.getNodeList();
+                for (MonitorFlowDesignerEntity.Node node : nodeList) {
+                    MonitorDataMapNode monitorDataMapNodeReq = new MonitorDataMapNode();
+                    monitorDataMapNodeReq.setMonitorId(monitorFlowDesignerEntity.getMonitorId());
+                    monitorDataMapNodeReq.setMonitorNodeId(node.getMonitorNodeId());
+                    monitorDataMapNodeReq.setLoc(node.getLoc());
+                    monitorDataMapNodeDao.updateNodeConfig(monitorDataMapNodeReq);
+                }
+
+                List<MonitorFlowDesignerEntity.Link> linkList = monitorFlowDesignerEntity.getLinkList();
+                monitorDataMapNodeLinkDao.deleteLinkFromByMonitorId(monitorFlowDesignerEntity.getMonitorId());
+                for (MonitorFlowDesignerEntity.Link link : linkList) {
+                    MonitorDataMapNodeLink monitorDataMapNodeLinkReq = new MonitorDataMapNodeLink();
+                    monitorDataMapNodeLinkReq.setMonitorId(monitorFlowDesignerEntity.getMonitorId());
+                    monitorDataMapNodeLinkReq.setFromMonitorNodeId(link.getFrom());
+                    monitorDataMapNodeLinkReq.setToMonitorNodeId(link.getTo());
+                    monitorDataMapNodeLinkDao.insert(monitorDataMapNodeLinkReq);
+                }
+                return 1;
+            } catch (Exception e) {
+                status.setRollbackOnly();
+                throw e;
+            }
+        });
     }
 
 }
