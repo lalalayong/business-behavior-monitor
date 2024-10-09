@@ -2,6 +2,7 @@ package com.jcg.monitor.test.trigger;
 
 import com.alibaba.fastjson2.JSON;
 import com.jcg.monitor.trigger.http.MonitorController;
+import com.jcg.monitor.trigger.http.dto.MonitorDataDTO;
 import com.jcg.monitor.trigger.http.dto.MonitorDataMapDTO;
 import com.jcg.monitor.trigger.http.dto.MonitorFlowDataDTO;
 import com.jcg.monitor.types.Response;
@@ -31,6 +32,12 @@ public class MonitorControllerTest {
     @Test
     public void test_queryMonitorFlowMap() {
         Response<MonitorFlowDataDTO> response = monitorController.queryMonitorFlowMap("129009");
+        log.info("测试结果: {}", JSON.toJSONString(response));
+    }
+
+    @Test
+    public void test_queryMonitorDataList(){
+        Response<List<MonitorDataDTO>> response = monitorController.queryMonitorDataList("","","");
         log.info("测试结果: {}", JSON.toJSONString(response));
     }
 
