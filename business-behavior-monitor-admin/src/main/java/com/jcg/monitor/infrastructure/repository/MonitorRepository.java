@@ -3,12 +3,10 @@ package com.jcg.monitor.infrastructure.repository;
 import com.jcg.monitor.domain.model.entity.MonitorDataEntity;
 import com.jcg.monitor.domain.model.entity.MonitorDataMapEntity;
 import com.jcg.monitor.domain.model.valobj.GatherNodeExpressionVO;
+import com.jcg.monitor.domain.model.valobj.MonitorTreeConfigVO;
 import com.jcg.monitor.domain.repository.IMonitorRepository;
 import com.jcg.monitor.infrastructure.dao.*;
-import com.jcg.monitor.infrastructure.po.MonitorData;
-import com.jcg.monitor.infrastructure.po.MonitorDataMap;
-import com.jcg.monitor.infrastructure.po.MonitorDataMapNode;
-import com.jcg.monitor.infrastructure.po.MonitorDataMapNodeField;
+import com.jcg.monitor.infrastructure.po.*;
 import com.jcg.monitor.infrastructure.redis.IRedisService;
 import com.jcg.monitor.types.Constants;
 import org.springframework.stereotype.Repository;
@@ -16,6 +14,8 @@ import org.springframework.stereotype.Repository;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Repository
 public class MonitorRepository implements IMonitorRepository {
@@ -110,6 +110,65 @@ public class MonitorRepository implements IMonitorRepository {
                     .build());
         }
         return monitorDataMapEntities;
+    }
+
+    @Override
+    public MonitorTreeConfigVO queryMonitorFlowData(String monitorId) {
+        // 监控节点配置
+        List<MonitorDataMapNode> monitorDataMapNodes = monitorDataMapNodeDao.queryMonitorNodeConfigByMonitorId(monitorId);
+        // 监控节点链路
+        List<MonitorDataMapNodeLink> monitorDataMapNodeLinks = monitorDataMapNodeLinkDao.queryMonitorNodeLinkConfigByMonitorId(monitorId);
+
+        Map<String, List<String>> fromMonitorNodeIdToNodeIds = monitorDataMapNodeLinks.stream()
+                .collect(Collectors.groupingBy(MonitorDataMapNodeLink::getFromMonitorNodeId,
+                        Collectors.mapping(MonitorDataMapNodeLink::getToMonitorNodeId,
+                                Collectors.toList())));
+
+        List<MonitorTreeConfigVO.Node> nodeList = new ArrayList<>();
+        for (MonitorDataMapNode monitorDataMapNode : monitorDataMapNodes) {
+            // 查询缓存节点流量值
+            String cacheKey = Constants.RedisKey.monitor_node_data_count_key + monitorId + Constants.UNDERLINE + monitorDataMapNode.getMonitorNodeId();
+            Long count = redisService.getAtomicLong(cacheKey);
+
+            nodeList.add(MonitorTreeConfigVO.Node.builder()
+                    .monitorNodeId(monitorDataMapNode.getMonitorNodeId())
+                    .monitorNodeName(monitorDataMapNode.getMonitorNodeName())
+                    .loc(monitorDataMapNode.getLoc())
+                    .color(monitorDataMapNode.getColor())
+                    .monitorNodeValue(null == count ? "0" : String.valueOf(count))
+                    .build());
+        }
+
+        List<MonitorTreeConfigVO.Link> linkList = new ArrayList<>();
+        for (MonitorDataMapNodeLink monitorDataMapNodeLink : monitorDataMapNodeLinks) {
+            // 获取节点值
+            String fromCacheKey = Constants.RedisKey.monitor_node_data_count_key + monitorId + Constants.UNDERLINE + monitorDataMapNodeLink.getFromMonitorNodeId();
+            Long fromCacheCount = redisService.getAtomicLong(fromCacheKey);
+            Long toCacheCount = 0L;
+
+            // 合并所有值
+            List<String> toNodeIds = fromMonitorNodeIdToNodeIds.get(monitorDataMapNodeLink.getFromMonitorNodeId());
+            for (String toNodeId : toNodeIds) {
+                String toCacheKey = Constants.RedisKey.monitor_node_data_count_key + monitorId + Constants.UNDERLINE + toNodeId;
+                toCacheCount += redisService.getAtomicLong(toCacheKey);
+            }
+
+            long differenceValue = (null == fromCacheCount ? 0L : fromCacheCount) - toCacheCount;
+
+            linkList.add(MonitorTreeConfigVO.Link.builder()
+                    .fromMonitorNodeId(monitorDataMapNodeLink.getFromMonitorNodeId())
+                    .toMonitorNodeId(monitorDataMapNodeLink.getToMonitorNodeId())
+                    .linkKey(String.valueOf(monitorDataMapNodeLink.getId()))
+                    .linkValue(String.valueOf(differenceValue <= 0 ? 0 : differenceValue))
+                    .build());
+
+        }
+
+        return MonitorTreeConfigVO.builder()
+                .monitorId(monitorId)
+                .nodeList(nodeList)
+                .linkList(linkList)
+                .build();
     }
 
 }

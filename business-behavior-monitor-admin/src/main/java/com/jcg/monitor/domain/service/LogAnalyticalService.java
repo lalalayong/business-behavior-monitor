@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.jcg.monitor.domain.model.entity.MonitorDataEntity;
 import com.jcg.monitor.domain.model.entity.MonitorDataMapEntity;
 import com.jcg.monitor.domain.model.valobj.GatherNodeExpressionVO;
+import com.jcg.monitor.domain.model.valobj.MonitorTreeConfigVO;
 import com.jcg.monitor.domain.repository.IMonitorRepository;
 import com.jcg.monitor.types.Constants;
 import ognl.Ognl;
@@ -74,6 +75,11 @@ public class LogAnalyticalService implements ILogAnalyticalService {
     @Override
     public List<MonitorDataMapEntity> queryMonitorDataMapEntityList() {
         return repository.queryMonitorDataMapEntityList();
+    }
+
+    @Override
+    public MonitorTreeConfigVO queryMonitorFlowData(String monitorId) {
+        return repository.queryMonitorFlowData(monitorId);
     }
 
 }
