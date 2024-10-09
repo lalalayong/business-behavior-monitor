@@ -104,7 +104,7 @@
 
     <appender name="CUSTOM" class="com.jcg.monitor.sdk.appender.CustomAppender">
         <systemName>big-market</systemName>
-        <groupId>com.jcg</groupId>
+        <groupId>com.jcg1</groupId>
         <host>192.168.112.128</host>
         <port>16379</port>
     </appender>

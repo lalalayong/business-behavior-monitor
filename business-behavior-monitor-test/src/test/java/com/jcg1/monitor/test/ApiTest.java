@@ -1,4 +1,4 @@
-package com.jcg.monitor.test;
+package com.jcg1.monitor.test;
 
 import com.alibaba.fastjson2.JSON;
 import lombok.Data;
@@ -32,7 +32,9 @@ public class ApiTest {
 
     @Test
     public void test_log_01() throws InterruptedException {
-        log.info("测试日志 {} {} {}", userEntity.getUserId(), userEntity.getUserName(), JSON.toJSONString(userEntity));
+        log.info("测试日志开始 {} {} {}", userEntity.getUserId(), userEntity.getUserName(), JSON.toJSONString(userEntity));
+        log.info("测试日志-加载xxx资源 {} {} {}", userEntity.getUserId(), userEntity.getUserName(), JSON.toJSONString(userEntity));
+        log.info("测试日志失败 {} {} {}", userEntity.getUserId(), userEntity.getUserName(), JSON.toJSONString(userEntity));
 
         new CountDownLatch(1).await();
     }
