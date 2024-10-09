@@ -1,6 +1,7 @@
 package com.jcg.monitor.domain.repository;
 
 import com.jcg.monitor.domain.model.entity.MonitorDataEntity;
+import com.jcg.monitor.domain.model.entity.MonitorDataMapEntity;
 import com.jcg.monitor.domain.model.valobj.GatherNodeExpressionVO;
 
 import java.util.List;
@@ -12,4 +13,6 @@ public interface IMonitorRepository {
 
 
     void saveMonitoryData(MonitorDataEntity monitorDataEntity);
+
+    List<MonitorDataMapEntity> queryMonitorDataMapEntityList();
 }
